@@ -3,7 +3,9 @@
 
 ## Overview
 
-This project is a 3D scanner using the Raspberry Pi Camera and a stepper motor for rotation. The images taken during the scan are used for 3D reconstruction through COLMAP, a photogrammetry software. This setup is designed to capture images, process them, and create a 3D model of the scanned object.
+This project is a 3D scanner using the Raspberry Pi Camera and a stepper motor for rotation. The images taken during the scan are used for
+3D reconstruction through COLMAP, a photogrammetry software. This setup is designed to capture images, process them, and create a 3D model
+of the scanned object.
 
 ## Features
 
@@ -17,9 +19,9 @@ This project is a 3D scanner using the Raspberry Pi Camera and a stepper motor f
 - **Raspberry Pi 4** or any Raspberry Pi model with camera support.
 - **Raspberry Pi Camera** (either V1, V2, or HQ model).
 - **Stepper Motor** with a stepper motor driver.
-- **Ubuntu** operating system (recommended for better package management and ease of installation).
-- **Python 3** (with pip) and the necessary libraries.
-- **COLMAP** (installed on the Raspberry Pi) for 3D reconstruction.
+- **Ubuntu** operating system (recommended).
+- **Python 3** and the necessary libraries.
+- **PyCOLMAP** for 3D reconstruction.
 
 ## Hardware Setup
 
