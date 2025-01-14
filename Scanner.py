@@ -13,7 +13,7 @@ from picamera2 import Picamera2
 import subprocess
 
 # Initialize serial communication (update with your port and baud rate)
-SERIAL_PORT = '/dev/ttyUSB0'  # Change to '/dev/ttyAMA0' or your specific port
+SERIAL_PORT = '/dev/ttyACM0'  # Change to '/dev/ttyAMA0' or your specific port
 BAUD_RATE = 9600
 
 # Initialize PiCamera2
