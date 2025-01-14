@@ -1,4 +1,3 @@
-
 import os
 import serial
 import time
@@ -19,14 +18,14 @@ project_folder = os.path.join(os.getcwd(), project_name)
 os.makedirs(project_folder, exist_ok=True)
 print(f"Project folder created: {project_folder}")
 
+# Set up serial communication
+ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
+print(f"Listening on {SERIAL_PORT} at {BAUD_RATE} baud.")
+camera.start()  # Start the camera
+
+image_count = 0  # Counter for images
+
 try:
-    # Set up serial communication
-    ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
-    print(f"Listening on {SERIAL_PORT} at {BAUD_RATE} baud.")
-    camera.start()  # Start the camera
-
-    image_count = 0  # Counter for images
-
     while True:
         # Read incoming serial data
         if ser.in_waiting > 0:
@@ -46,11 +45,16 @@ try:
 
             elif command == "DONE":
                 print("Arduino has finished its task.")
-                # Clean up resources
-    finally:
-                camera.stop()
-                if 'ser' in locals():
-                    ser.close()
-                print("Camera and serial communication closed.")
-                break  # O continuare se il flusso deve proseguire
-    
+                # Send confirmation back to Arduino
+                ser.write(b"Task Completed\n")
+                break  # Exit the loop when Arduino finishes
+
+except Exception as e:
+    print(f"An error occurred: {e}")
+
+finally:
+    # Clean up resources
+    camera.stop()
+    if 'ser' in locals():
+        ser.close()
+    print("Camera and serial communication closed.")
