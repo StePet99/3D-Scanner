@@ -46,12 +46,14 @@ try:
 
             elif command == "DONE":
                 print("Arduino has finished its task.")
+                # Clean up resources
+                camera.stop()
+                if 'ser' in locals():
+                    ser.close()
+                print("Camera and serial communication closed.")
+
                 break  # O continuare se il flusso deve proseguire
             else:
                 print("Unknown command received.")
 
-    # Clean up resources
-    camera.stop()
-    if 'ser' in locals():
-        ser.close()
-    print("Camera and serial communication closed.")
+    
