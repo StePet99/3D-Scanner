@@ -1,20 +1,17 @@
 import os
 import pycolmap
 
-# Directory di input e output
-input_dir = "images"  # Directory con le immagini
-workspace_dir = "pycolmap_workspace"  # Cartella per i file di lavoro
-database_path = os.path.join(workspace_dir, "database.db")
-sparse_dir = os.path.join(workspace_dir, "sparse")
-dense_dir = os.path.join(workspace_dir, "dense")
-
-# Creazione delle directory necessarie
-os.makedirs(workspace_dir, exist_ok=True)
-os.makedirs(sparse_dir, exist_ok=True)
-os.makedirs(dense_dir, exist_ok=True)
-
 # Funzione di supporto per la ricostruzione
-def reconstruct(input_dir, database_path, sparse_dir, dense_dir):
+def reconstruct(input_dir):
+    # Percorsi per i file e le cartelle di output
+    database_path = os.path.join(input_dir, "database.db")
+    sparse_dir = os.path.join(input_dir, "sparse")
+    dense_dir = os.path.join(input_dir, "dense")
+
+    # Creazione delle directory necessarie
+    os.makedirs(sparse_dir, exist_ok=True)
+    os.makedirs(dense_dir, exist_ok=True)
+
     print(">> Estrazione delle feature...")
     pycolmap.extract_features(database_path=database_path, image_path=input_dir)
 
@@ -42,9 +39,19 @@ def reconstruct(input_dir, database_path, sparse_dir, dense_dir):
         input_path=os.path.join(dense_dir, "fused.ply"),
         output_path=os.path.join(dense_dir, "mesh.ply"),
     )
+
     print(">> Processo completato!")
     print("Nuvola di punti densa salvata in:", os.path.join(dense_dir, "fused.ply"))
     print("Mesh 3D salvata in:", os.path.join(dense_dir, "mesh.ply"))
 
-# Esegui la ricostruzione
-reconstruct(input_dir, database_path, sparse_dir, dense_dir)
+
+if __name__ == "__main__":
+    # Chiedi all'utente la directory delle immagini
+    input_dir = input("Inserisci il percorso della directory con le immagini: ").strip()
+
+    # Verifica che la directory esista
+    if not os.path.isdir(input_dir):
+        print("Errore: la directory specificata non esiste.")
+    else:
+        # Avvia il processo di ricostruzione
+        reconstruct(input_dir)
