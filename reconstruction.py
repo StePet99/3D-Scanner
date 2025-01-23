@@ -1,5 +1,6 @@
 import os
 import pycolmap
+import trimesh
 
 # Funzione di supporto per la ricostruzione
 def reconstruct(input_dir):
@@ -35,14 +36,32 @@ def reconstruct(input_dir):
     )
 
     print(">> Creazione della mesh...")
+    mesh_path = os.path.join(dense_dir, "mesh.ply")
     dense_model.poisson_mesher(
         input_path=os.path.join(dense_dir, "fused.ply"),
-        output_path=os.path.join(dense_dir, "mesh.ply"),
+        output_path=mesh_path,
     )
+
+    print(">> Conversione della mesh in STL...")
+    stl_path = os.path.join(dense_dir, "mesh.stl")
+    convert_to_stl(mesh_path, stl_path)
 
     print(">> Processo completato!")
     print("Nuvola di punti densa salvata in:", os.path.join(dense_dir, "fused.ply"))
-    print("Mesh 3D salvata in:", os.path.join(dense_dir, "mesh.ply"))
+    print("Mesh 3D salvata in PLY:", mesh_path)
+    print("Mesh 3D salvata in STL:", stl_path)
+
+
+# Funzione per convertire una mesh da PLY a STL
+def convert_to_stl(ply_path, stl_path):
+    try:
+        # Carica la mesh usando trimesh
+        mesh = trimesh.load_mesh(ply_path)
+        # Salva la mesh in formato STL
+        mesh.export(stl_path)
+        print(f"Mesh esportata in formato STL: {stl_path}")
+    except Exception as e:
+        print(f"Errore durante la conversione a STL: {e}")
 
 
 if __name__ == "__main__":
