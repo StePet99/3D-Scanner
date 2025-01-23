@@ -1,92 +1,50 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Dec 26 12:30:10 2024
-
-@author: stefanopetraccini
-"""
-
 import os
-import serial
-import time
-from picamera2 import Picamera2
-import subprocess
+import pycolmap
 
-# Initialize serial communication (update with your port and baud rate)
-SERIAL_PORT = '/dev/ttyACM0'  # Change to '/dev/ttyAMA0' or your specific port
-BAUD_RATE = 9600
+# Directory di input e output
+input_dir = "images"  # Directory con le immagini
+workspace_dir = "pycolmap_workspace"  # Cartella per i file di lavoro
+database_path = os.path.join(workspace_dir, "database.db")
+sparse_dir = os.path.join(workspace_dir, "sparse")
+dense_dir = os.path.join(workspace_dir, "dense")
 
-# Initialize PiCamera2
-camera = Picamera2()
-camera.configure(camera.create_still_configuration())
+# Creazione delle directory necessarie
+os.makedirs(workspace_dir, exist_ok=True)
+os.makedirs(sparse_dir, exist_ok=True)
+os.makedirs(dense_dir, exist_ok=True)
 
-# Ask for project name and create folder
-project_name = input("Enter project name: ").strip()
-project_folder = os.path.join(os.getcwd(), project_name)
-os.makedirs(project_folder, exist_ok=True)
-print(f"Project folder created: {project_folder}")
+# Funzione di supporto per la ricostruzione
+def reconstruct(input_dir, database_path, sparse_dir, dense_dir):
+    print(">> Estrazione delle feature...")
+    pycolmap.extract_features(database_path=database_path, image_path=input_dir)
 
-try:
-    # Set up serial communication
-    ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
-    print(f"Listening on {SERIAL_PORT} at {BAUD_RATE} baud.")
-    camera.start()  # Start the camera
+    print(">> Matching delle feature...")
+    pycolmap.match_exhaustive(database_path=database_path)
 
-    image_count = 0  # Counter for images
+    print(">> Ricostruzione sparsa...")
+    sparse_model = pycolmap.Reconstruction()
+    sparse_model.mapper(
+        database_path=database_path,
+        image_path=input_dir,
+        output_path=sparse_dir,
+    )
 
-    while True:
-        # Read incoming serial data
-        if ser.in_waiting > 0:
-            command = ser.readline().decode('utf-8').strip()
-            print(f"Received command: {command}")
+    print(">> Ricostruzione densa...")
+    dense_model = pycolmap.Reconstruction()
+    dense_model.dense_reconstruction(
+        image_path=input_dir,
+        sparse_model_path=os.path.join(sparse_dir, "0"),
+        output_path=dense_dir,
+    )
 
-            if command == "CAPTURE":
-                # Generate a unique filename for the image
-                filename = os.path.join(project_folder, f"image_{image_count:03}.jpg")
-                print(f"Capturing image: {filename}")
-                camera.capture_file(filename)
-                image_count += 1
+    print(">> Creazione della mesh...")
+    dense_model.poisson_mesher(
+        input_path=os.path.join(dense_dir, "fused.ply"),
+        output_path=os.path.join(dense_dir, "mesh.ply"),
+    )
+    print(">> Processo completato!")
+    print("Nuvola di punti densa salvata in:", os.path.join(dense_dir, "fused.ply"))
+    print("Mesh 3D salvata in:", os.path.join(dense_dir, "mesh.ply"))
 
-                # Send acknowledgment back to Arduino
-                ser.write(b"Image Captured\n")
-                print("Acknowledgment sent.")
-
-            elif command == "STOP":
-                print("Stopping capture session...")
-                break
-
-            else:
-                print("Unknown command received.")
-
-    # After capturing images, start 3D reconstruction
-    if image_count > 0:
-        print(f"Starting 3D reconstruction with {image_count} images...")
-        reconstruction_folder = os.path.join(project_folder, "reconstruction")
-        os.makedirs(reconstruction_folder, exist_ok=True)
-
-        # Run pycolmap reconstruction command
-        try:
-            subprocess.run([
-                "pycolmap",
-                "reconstruct",
-                "--image_path", project_folder,
-                "--output_path", reconstruction_folder
-            ], check=True)
-            print(f"3D reconstruction completed. Results saved in {reconstruction_folder}.")
-        except FileNotFoundError:
-            print("pycolmap not found. Please ensure it is installed and available in your PATH.")
-        except subprocess.CalledProcessError as e:
-            print(f"An error occurred during reconstruction: {e}")
-
-    else:
-        print("No images were captured. Skipping reconstruction.")
-
-except Exception as e:
-    print(f"An error occurred: {e}")
-
-finally:
-    # Clean up resources
-    camera.stop()
-    if 'ser' in locals():
-        ser.close()
-    print("Camera and serial communication closed.")
+# Esegui la ricostruzione
+reconstruct(input_dir, database_path, sparse_dir, dense_dir)
